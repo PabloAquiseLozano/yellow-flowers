@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Flor de Ánimo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body data-mood="day">
+
+  <!-- A persistent backdrop behind both screens: it starts blurred and sharpens
+       as the form progresses, and its sun/moon animate whenever the mood changes. -->
+  <div id="sky-scene" class="sky-scene" aria-hidden="true">
+    <div class="sky-gradient sky-gradient--day"></div>
+    <div class="sky-gradient sky-gradient--night"></div>
+    <div class="sky-flash"></div>
+
+    <!-- Positioned in plain viewport %, not inside the SVG below: a "cover"-scaled
+         viewBox shifts a fixed point's visible position as the aspect ratio changes
+         (wide+short desktop crops differently than tall+narrow mobile). A % div
+         stays at the same relative spot regardless of aspect ratio. -->
+    <div class="sun-el"></div>
+    <div class="moon-el">
+      <div class="crater" style="width:22%; height:22%; left:20%; top:14%;"></div>
+      <div class="crater" style="width:15%; height:15%; left:55%; top:50%;"></div>
+      <div class="crater" style="width:11%; height:11%; left:42%; top:8%;"></div>
+    </div>
+
+    <svg class="sky-svg" viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice">
+      <g class="stars">
+        <circle cx="40" cy="90" r="1.6"></circle>
+        <circle cx="90" cy="150" r="1.2"></circle>
+        <circle cx="150" cy="70" r="1.8"></circle>
+        <circle cx="220" cy="130" r="1.3"></circle>
+        <circle cx="280" cy="60" r="1.6"></circle>
+        <circle cx="330" cy="110" r="1.2"></circle>
+        <circle cx="60" cy="220" r="1.1"></circle>
+        <circle cx="360" cy="200" r="1.4"></circle>
+      </g>
+      <g class="clouds">
+        <g class="cloud" transform="translate(60,120)">
+          <ellipse cx="0" cy="0" rx="34" ry="14"></ellipse>
+          <ellipse cx="24" cy="-6" rx="22" ry="12"></ellipse>
+          <ellipse cx="-22" cy="4" rx="20" ry="10"></ellipse>
+        </g>
+        <g class="cloud" transform="translate(300,180)">
+          <ellipse cx="0" cy="0" rx="28" ry="12"></ellipse>
+          <ellipse cx="20" cy="-5" rx="18" ry="10"></ellipse>
+        </g>
+      </g>
+      <path class="hill hill--back" d="M0,620 C 80,570 160,600 240,580 C 300,565 350,590 400,575 L400,800 L0,800 Z"></path>
+      <path class="hill hill--front" d="M0,680 C 100,630 220,670 320,640 C 360,628 380,645 400,638 L400,800 L0,800 Z"></path>
+    </svg>
+  </div>
+
+  <!-- ===================== SCREEN 1 — FORM ===================== -->
+  <main id="form-screen" class="screen form-screen">
+    <form id="intro-form" class="glass-card" novalidate>
+      <div class="progress" id="progress" aria-hidden="true">
+        <span class="dot active" data-dot="0"></span>
+        <span class="dot" data-dot="1"></span>
+        <span class="dot" data-dot="2"></span>
+      </div>
+
+      <!-- Step 0 — name -->
+      <fieldset class="step active" data-step="0">
+        <legend class="eyebrow">Para empezar</legend>
+        <h1>¿Cómo te llamas?</h1>
+        <div class="input-arrow">
+          <input id="field-name" name="name" type="text" placeholder="Tu nombre" autocomplete="given-name" required minlength="1" maxlength="40">
+          <button type="button" class="arrow-btn" data-next aria-label="Continuar">→</button>
+        </div>
+      </fieldset>
+
+      <!-- Step 1 — zodiac -->
+      <fieldset class="step" data-step="1">
+        <legend class="eyebrow">Un poco de ti</legend>
+        <h1>¿Cuál es tu signo zodiacal?</h1>
+        <select id="field-zodiac" name="zodiac" required>
+          <option value="" disabled selected>Elige uno</option>
+          <option value="aries">Aries</option>
+          <option value="tauro">Tauro</option>
+          <option value="geminis">Géminis</option>
+          <option value="cancer">Cáncer</option>
+          <option value="leo">Leo</option>
+          <option value="virgo">Virgo</option>
+          <option value="libra">Libra</option>
+          <option value="escorpio">Escorpio</option>
+          <option value="sagitario">Sagitario</option>
+          <option value="capricornio">Capricornio</option>
+          <option value="acuario">Acuario</option>
+          <option value="piscis">Piscis</option>
+        </select>
+        <div class="step-actions">
+          <button type="button" class="btn ghost" data-back>Atrás</button>
+          <button type="button" class="btn primary" data-next>Continuar</button>
+        </div>
+      </fieldset>
+
+      <!-- Step 2 — secondary color -->
+      <fieldset class="step" data-step="2">
+        <legend class="eyebrow">Tu toque personal</legend>
+        <h1>Elige un color favorito</h1>
+        <p class="hint">Este color decidirá qué otras flores acompañan a las amarillas en tu jardín.</p>
+        <label class="color-picker">
+          <input id="field-color" name="color" type="color" value="#e85d75">
+          <span class="swatch" id="color-swatch"></span>
+          <span id="color-label" class="color-label">Rosa cálido</span>
+        </label>
+        <div class="step-actions">
+          <button type="button" class="btn ghost" data-back>Atrás</button>
+          <button type="submit" class="btn primary" id="submit-btn">Ver mi jardín</button>
+        </div>
+      </fieldset>
+    </form>
+  </main>
+
+  <!-- ===================== SCREEN 2 — EXPERIENCE ===================== -->
+  <section id="garden-screen" class="screen garden-screen" hidden>
+    <div id="garden-ground" class="garden-ground">
+      <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+        <path d="M0,20 C 100,4 300,4 400,20 L400,200 L0,200 Z"></path>
+      </svg>
+    </div>
+    <div id="garden-scene" class="garden-scene"></div>
+
+    <h1 id="garden-name" class="garden-name" aria-live="polite"></h1>
+
+    <div class="garden-ui">
+      <p class="garden-hint">Toca una flor para leer un mensaje · Toca el sol o la luna para cambiar el clima</p>
+    </div>
+
+    <div id="message-card" class="message-card" hidden>
+      <p class="message-card-name" id="message-card-name"></p>
+      <p class="message-card-text" id="message-card-text"></p>
+    </div>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="js/sky.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/garden.js"></script>
+</body>
+</html>

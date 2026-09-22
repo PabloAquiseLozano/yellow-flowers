@@ -1,0 +1,427 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Author CSS beats the UA stylesheet at equal specificity, so `.screen { display: flex }`
+   would otherwise override the native `[hidden]{display:none}` and the garden's full-screen
+   canvas would sit on top of the form, eating its clicks and keyboard focus. */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: var(--font-body);
+  color: var(--ink);
+  overflow: hidden; /* single-viewport experience, no scroll */
+}
+
+body {
+  background: var(--bg-1); /* flat fallback beneath #sky-scene, e.g. if JS fails to load */
+  color: var(--ink);
+  transition: color var(--dur-transition) ease;
+}
+
+.screen {
+  position: fixed;
+  z-index: 1; /* above #sky-scene */
+  inset: 0;
+  /* Empty by default: a full-viewport flex container would otherwise
+     intercept clicks meant for the sun/moon behind it even where it has
+     nothing visible to show — same bug class as the [hidden] canvas earlier.
+     Actual interactive content (.glass-card) opts back in below. */
+  pointer-events: none;
+  padding: max(var(--space-5), env(safe-area-inset-top)) max(var(--space-5), env(safe-area-inset-right))
+           max(var(--space-5), env(safe-area-inset-bottom)) max(var(--space-5), env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ------------------------------- Sky backdrop ------------------------------- */
+/* Persistent behind both screens: blurred at step 0, sharp by the last step;
+   its sun/moon swap whenever the mood changes. See js/sky.js. */
+
+.sky-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky-gradient {
+  position: absolute;
+  inset: 0;
+}
+.sky-gradient--day {
+  background: radial-gradient(ellipse 120% 80% at 50% -10%, var(--bg-2), var(--bg-1) 60%);
+}
+.sky-gradient--night {
+  background: radial-gradient(ellipse 120% 80% at 50% -10%, #2E2350, #1B1730 60%);
+  opacity: 0;
+}
+
+/* A brief tinted wash during the day<->night transition — the gradient
+   crossfade alone reads as a flat dissolve; this adds an actual sense of
+   light/brightness changing, warm on the way to dusk, cool on the way to dawn. */
+.sky-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Plain % -positioned circles, deliberately NOT part of .sky-svg below: a
+   "slice"-scaled viewBox re-crops as the aspect ratio changes, so a point
+   fixed inside it visibly drifts between a tall mobile screen and a wide,
+   short desktop one. A % div holds the same relative spot on both. */
+.sun-el, .moon-el {
+  position: absolute;
+  width: min(23vw, 130px);
+  height: min(23vw, 130px);
+  top: 10%;
+  left: 18%;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sun-el {
+  background: #F5B700;
+  filter: drop-shadow(0 0 30px rgba(245, 183, 0, 0.55));
+}
+.moon-el {
+  background: #F2EFE4;
+  filter: drop-shadow(0 0 22px rgba(242, 239, 228, 0.4));
+}
+.moon-el .crater {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(58, 46, 18, 0.14);
+  pointer-events: none;
+}
+
+.sky-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stars circle { fill: #F5EFE0; animation: twinkle 3.5s ease-in-out infinite; }
+.stars circle:nth-child(2n) { animation-delay: 0.6s; }
+.stars circle:nth-child(3n) { animation-delay: 1.4s; }
+.clouds ellipse { fill: rgba(255, 255, 255, 0.65); }
+.hill { fill: color-mix(in srgb, var(--bg-2) 55%, var(--accent-deep) 12%); opacity: 0.55; }
+.hill--front { opacity: 0.8; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.glass-card {
+  position: relative;
+  pointer-events: auto;
+  width: min(440px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  padding: var(--space-7) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.progress { display: flex; gap: var(--space-2); justify-content: center; }
+.dot {
+  width: 8px; height: 8px; border-radius: var(--radius-pill);
+  background: var(--border);
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+.dot.active { background: var(--accent); transform: scale(1.3); }
+
+.step {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-4);
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+.step.active { display: flex; }
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent-text);
+  padding: 0;
+}
+
+.step h1 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(24px, 5vw, 32px);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.hint { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+
+input[type="text"], select, textarea {
+  width: 100%;
+  min-height: 44px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+  outline: none;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+textarea { resize: none; }
+input[type="text"]:focus, select:focus, textarea:focus {
+  border-color: var(--accent-deep);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.input-arrow { position: relative; display: flex; align-items: center; }
+.input-arrow input { padding-right: 56px; }
+.arrow-btn {
+  position: absolute;
+  right: 6px;
+  width: 44px; height: 44px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform var(--dur-fast) cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow var(--dur-fast) ease;
+}
+.arrow-btn:active { transform: scale(0.94); }
+.arrow-btn:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 3px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .arrow-btn:hover { transform: scale(1.08); box-shadow: var(--shadow-elevated); }
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  cursor: pointer;
+}
+.color-picker input[type="color"] {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.swatch {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1.5px var(--border);
+  background: #E85D75;
+  flex-shrink: 0;
+}
+.color-label { font-size: 15px; font-weight: 500; }
+
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.btn {
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid transparent;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow var(--dur-fast) ease,
+              opacity var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.btn.primary { background: var(--accent); color: var(--ink); margin-left: auto; }
+.btn.ghost { background: transparent; color: var(--ink-soft); border-color: var(--border); }
+.btn:active { transform: scale(0.96); }
+.btn:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 3px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn.primary:hover { transform: scale(1.04); box-shadow: var(--shadow-elevated); }
+  .btn.ghost:hover { border-color: var(--accent-deep); color: var(--ink); }
+}
+
+/* ---------------------------- Garden screen ---------------------------- */
+
+.garden-screen { padding: 0; overflow: hidden; }
+
+/* Ground: an explicit, exact share of the viewport — never "however tall the
+   content happens to be" — so the field reads as a deliberate proportion on
+   every screen size instead of drifting with flower count or stem height. */
+.garden-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  z-index: 2; /* above the name text, below every flower (z-index 5+) so stems visibly plant into it */
+  pointer-events: none;
+}
+.garden-ground svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.garden-ground path { fill: #6FAE5C; }
+[data-mood="night"] .garden-ground path { fill: #2F4A38; }
+
+.garden-scene {
+  position: absolute;
+  /* Explicit and above .garden-ground's z-index:2 — flowers are DOM-earlier
+     than nothing here, but a positioned sibling with an explicit z-index
+     still needs this element to out-rank it, or the whole field paints
+     behind the ground regardless of the flowers' own (locally-scoped) z-index. */
+  z-index: 3;
+  left: 0;
+  right: 0;
+  /* `bottom` is the flowers' actual root line (each one sits at `bottom: 0`
+     of THIS box) — it must match the ground's grass line, not the viewport
+     edge. `height` does NOT do that job: a flower's `bottom: 0` anchors to
+     this element's own bottom edge regardless of how tall this box is
+     declared, so a taller box alone just grows more green above the flowers
+     without ever raising them. No `height` at all: nothing inside uses `top`
+     or a %-based size, so it isn't needed for layout, only `bottom` is. */
+  bottom: 38%; /* 2% inside .garden-ground's 40% height — just below its grass line */
+  width: 100%; /* spans the full screen — a capped/centered band read as "too few flowers" on wide desktops */
+  pointer-events: none;
+}
+
+.garden-name {
+  position: absolute;
+  z-index: 1; /* the flowers in .garden-scene (z-index 5+) grow in front of it */
+  /* Anchored by its OWN center, not its top edge: top-edge anchoring means a
+     shorter viewport (smaller clamp()'d font-size) shrinks the box while its
+     top stays pinned, so the visual center drifts upward as the screen
+     narrows. Centering on both axes keeps that center fixed; only the width
+     of the text (via clamp/vw) responds to the viewport. */
+  top: 26%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  width: 100%;
+  padding-inline: var(--space-5);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(48px, 15vw, 170px);
+  line-height: 0.95;
+  text-align: center;
+  text-wrap: balance;
+  pointer-events: none;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  /* text-shadow paints independently of the transparent gradient fill above —
+     a soft drop shadow for depth plus a wider golden glow, so the title reads
+     as an object sitting in the scene instead of a flat color swatch. */
+  filter:
+    drop-shadow(0 6px 18px rgba(58, 46, 18, 0.22))
+    drop-shadow(0 0 46px rgba(245, 183, 0, 0.35));
+}
+
+.garden-ui {
+  position: absolute;
+  top: max(var(--space-5), env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(320px, calc(100% - 32px));
+  pointer-events: none;
+}
+.garden-hint {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px 18px;
+  backdrop-filter: blur(12px);
+}
+
+/* Same slot as .garden-name (top/left/transform match) — clicking a flower
+   fades the title out and this in, in place, instead of popping a separate
+   card elsewhere on screen. See the crossfade in garden.js. */
+.message-card {
+  position: absolute;
+  z-index: 1; /* same layer as .garden-name — they occupy the same slot, never both visible at once */
+  top: 26%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100% - 48px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+  box-shadow: var(--shadow-elevated);
+}
+.message-card-name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 24px;
+  margin: 0 0 var(--space-3);
+}
+.message-card-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .glass-card { padding: var(--space-6) var(--space-5); }
+  .step-actions { flex-direction: row; }
+}
+
+/* Mobile garden layout: the name (and the message card in its same slot) move
+   to the screen's true center, and the ground rises to meet it — the hill
+   starts right at center instead of low in the bottom 40%, so the flowers
+   read as "growing up into the middle of the screen" rather than a thin
+   strip stuck to the bottom edge with a large empty gap above it. Desktop
+   keeps the original top:26% / 40% composition (not affected by this query). */
+@media (max-width: 700px) {
+  /* The previous pass centered the name at 50% and rooted flowers right at
+     that same line, meaning stems and petals crossed straight through the
+     name text — it read as messy overlap, not an intentional layered
+     composition. This keeps the name clear of the flowers entirely: a fixed
+     gap of open sky between the name's bottom edge and the tallest flower's
+     top, with the ground raised enough that flowers aren't stranded in a
+     thin strip at the very bottom either. */
+  /* Fixing the hill-curve math (flowers were floating above the grass, see
+     the comment in garden.js) freed up real headroom, so the name can move
+     back down toward center and grow, without re-touching the flowers. */
+  .garden-name, .message-card { top: 40%; } /* same slot — one replaces the other with a fade, they never both show */
+  .garden-name { font-size: clamp(64px, 20vw, 170px); }
+  .garden-ground { height: 36%; }
+  .garden-scene { bottom: 34%; } /* the actual root line — see the comment on the base rule above */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
