@@ -1,4 +1,4 @@
-# Flor de Ánimo
+# Florcitas Amarillas
 
 Regalo interactivo: la persona escribe su nombre, elige su signo zodiacal y un color favorito, y ve crecer un jardín animado en 2D. Cada flor, al tocarla, revela un mensaje bonito.
 
