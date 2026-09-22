@@ -14,6 +14,15 @@
   var colorSwatch = document.getElementById('color-swatch');
   var colorLabel = document.getElementById('color-label');
 
+  // Letters (incl. accented Spanish letters and ñ) plus spaces, apostrophes
+  // and hyphens for compound/hyphenated names — no digits, no symbols.
+  var NAME_PATTERN = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;
+  fieldName.addEventListener('input', function () {
+    var cleaned = fieldName.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '');
+    if (cleaned !== fieldName.value) fieldName.value = cleaned;
+    fieldName.setCustomValidity('');
+  });
+
   // Bucket a hex color by hue into a named family + representative secondary-flower color.
   // Source of truth for these buckets: MASTER.md "Secundario" table.
   function hexToHue(hex) {
@@ -96,7 +105,7 @@
   }
 
   function validateStep(index) {
-    if (index === 0) return fieldName.value.trim().length > 0;
+    if (index === 0) return NAME_PATTERN.test(fieldName.value.trim());
     if (index === 1) return !!fieldZodiac.value;
     return true;
   }
